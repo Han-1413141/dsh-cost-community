@@ -1,0 +1,4 @@
+# Runtime hashes must remain identical after checkout on Windows and Unix.
+client/** text eol=lf
+shared/** text eol=lf
+skills/** text eol=lf

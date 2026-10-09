@@ -1,0 +1,4 @@
+interface:
+  display_name: "DSH 成本与工作摘要贡献"
+  short_description: "整理 DSH 成本与工作量，脱敏预览后直接贡献，无需打开网页。"
+  default_prompt: "用 $dsh-cost-contribute 整理本次授权范围内的成本和工作摘要，先给我预览，确认后再上传。"

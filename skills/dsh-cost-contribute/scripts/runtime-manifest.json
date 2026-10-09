@@ -1,0 +1,11 @@
+{
+  "format": "dsh-skill-runtime-1",
+  "node": ">=22 <25",
+  "files": {
+    "client/collect-dsh.mjs": "a4f9a5b82b798828a4f9a47374fa6c087566a6ecc248a1c766a76832a6e9be58",
+    "client/dsh-cost-contribute.mjs": "0bd15099bd2120a4c84b5eb1146e168f0575be4547b3776a00177d33a80c8399",
+    "shared/analysis.js": "2abf3d9e95fd43fb36adf7e158fa7ef2cb12984453c449ae74e77ef1d1191db4",
+    "shared/privacy.js": "99d79d210a905860586e2ec97cb785d232d7ac2637807404bbcd206346897cac",
+    "shared/schema.json": "05273a7206443e33bd892341db02da82b591a493837250ccfc25d34504491a39"
+  }
+}

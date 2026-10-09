@@ -62,7 +62,7 @@ work_summary: {
 }
 ```
 
-`difficulty` 必须等于所属周期的难度，工作类型沿用周期 `task_type`，验收沿用任务 `accepted`。代码量只接收区间，具体行数、业务描述、源码、路径、文件名都不进入数据协议。区间仅描述工作规模，不作为质量或性价比排名指标。`not_applicable` 表示不适用或本次不提供代码规模区间，不从缺失值推断实际行数。
+`difficulty` 必须等于所属周期的难度，工作类型沿用周期 `task_type`，验收沿用任务 `accepted`。代码量只接收区间，具体行数、业务描述、源码、路径、文件名都不进入数据协议。区间仅描述工作规模，不作为质量或性价比排名指标。`not_applicable` 只表示工作不涉及代码行；不知道或不愿提供时不填写工作摘要，不能填该值代替未知规模。
 
 浏览器若允许临时填写具体行数，须在本地转换成区间后才构建 `data`；不能在 JSON 中增加原始行数字段。`prepareContribution` 签名不变，保留合法枚举摘要。摘要编辑须以原本地数据为源再次生成待发送数据，并清空贡献同意及工作摘要确认，不能对已经替换的工作流别名重复做 HMAC。
 
@@ -170,3 +170,25 @@ totals: { quota_samples, cost_periods, attempted_tasks, accepted_tasks }
 网站前端、后端及计算代码在 `https://github.com/Han-1413141/dsh-cost-community` 以 MIT 公开。用户数据不自动采用代码许可证。贡献授权明确限定为服务端重算及公开聚合；不会因此公开单份摘要或原始任务记录。
 
 本地分析与贡献成功页均提供“下载可分享的脱敏摘要”。下载的是去标识的周期与额度分析结果，贡献成功页以服务端 `summary` 为准；下载不发起公开操作。是否另行发布以及选择何种数据许可，由用户自行决定。本轮没有新增单份摘要公开接口、数据授权字段或数据库表，也不改变已有贡献的可见性。
+
+## 本地技能执行器
+
+`client/dsh-cost-contribute.mjs` 使用 Node.js 22–24，在本地完成共享校验和去标识，再调用上述贡献及撤回 API；不需要打开网页，也不增加服务器接口、字段或数据库表。它不依赖第三方 npm 包，安装时须保留 `client/`、`shared/` 的相对关系和脚本根目录 `type:module`。
+
+| 命令 | 合同 |
+|---|---|
+| `prepare --input <v2.json> --out <新目录>` | 零网络；校验原输入后执行 `prepareContribution`；生成 `preview.md`、`payload.json`、`manifest.json`，不覆盖目录。允许 synthetic 仅本地预览。 |
+| `upload --draft <目录> --confirmed-sha256 <review_sha256> --confirm-reviewed` | 仅在用户核对当前完整预览并明确同意后执行；读取并校验草稿；synthetic 拒绝；向固定项目 `/api/contributions` 发送一次。 |
+| `withdraw --receipt <私有凭证.json> --confirm-withdraw` | 仅在用户明确要求撤回时执行；向凭证绑定端点发送一次 `DELETE`。 |
+
+生产端点固定为 `https://dsh-cost-community.onrender.com`。隔离验证可显式使用 `--test-endpoint http://127.0.0.1:<port>` 或 `http://[::1]:<port>`，三个命令须保持绑定端点；不接受其他服务、子路径或 URL 凭据。所有写请求按固定目标发送 `Origin`，`redirect:error` 禁止跟随重定向，30 秒超时，不自动重试。
+
+`manifest.json` 为 `dsh-cost-draft-v1`，字段是 `format_version`、`created_at`、`endpoint`、`consent_version`、`dataset_kind`、`requires_work_summary_review`、`payload_sha256`、`preview_sha256` 和 `review_sha256`。其中 `review_sha256` 对其余固定顺序字段的 JSON 求 SHA-256，绑定实际 UTF-8 请求与完整预览的字节哈希。上传必须同时匹配该值、文件哈希与 `--confirm-reviewed`；文件、预览、端点或授权版本变动后原确认失效。哈希不证明用户已经阅读，技能必须先取得对所展示版本的明确确认，用户无需手抄哈希。
+
+实际请求沿用当前 `consent` 和 v2 `data`；存在工作摘要时带 `work_summary_reviewed:true`。预览列出每个比较维度、费用分量、任务验收、尝试数、Token、人工时间、工作摘要枚举及完整实际 JSON。`payload.json` 中的授权值是待发送模板，生成草稿不等于已同意上传。实付、完整周期和任务验收必须来自用户提供的数据，不能根据 API 调用数或目录估值推断。
+
+Windows 去标识密钥和撤回凭证保存在 `%LOCALAPPDATA%/DSHCostCommunity/client`，继承用户目录权限；其他平台保存在 `~/.local/share/DSHCostCommunity/client`，目录 `0700`、文件 `0600`。状态目录不能位于 Git 仓库内。随机 32 字节 HMAC 密钥仅本地保存，导入为不可导出的 Web Crypto key 后传给共享去标识函数；不上传、不打印，也不保存原标识映射。CLI 与浏览器的工作流别名各自稳定，不承诺互通或识别独立用户。
+
+成功上传后，草稿保存服务端 `server-summary.json`；私有 `receipts/<UUID>.json` 保存 `dsh-withdrawal-receipt-v1` 凭证，包含端点、贡献编号、撤回密钥、创建时间、授权版本及本次 review hash。终端只返回编号和文件路径，不打印密钥。`upload-state.json` 记录 `succeeded`、明确拒绝时的 `rejected`，或结果不明时的 `unknown`；有过发送记录的草稿不再自动发送。网络结果不明不能另建相同草稿绕过。撤回也保存单独状态并禁止自动重发。
+
+`collect-dsh.mjs` 输出独立的 `dsh-observations-1 / local_observations` 草稿，不可直接用于该执行器上传。需要依据真实来源补全 v2 所需统计字段后另行准备，禁止把调用次数当验收任务或把 USD 目录估值当人民币实付。

@@ -1,0 +1,28 @@
+{
+  "scope": "独立技能目录分发与本机安装",
+  "date": "2026-10-09",
+  "runtime_files": 5,
+  "runtime_matches_source": true,
+  "skill_frontmatter_validation": "passed",
+  "local_prepare": {
+    "dataset_kind": "synthetic",
+    "status": "prepared_locally",
+    "network_requests": 0,
+    "upload_executed": false,
+    "attempted_tasks": 20,
+    "accepted_tasks": 15
+  },
+  "independent_review": {
+    "scenarios": ["完整成本周期与工作摘要预览", "仅额度观察及混合模型工作流"],
+    "necessary_changes": ["无成本周期不显示零任务", "人类预览使用本地任务序号"],
+    "changes_applied": true,
+    "production_requests": 0
+  },
+  "installation": {
+    "codex_user_skill_directory": "installed",
+    "dsh_user_skill_directory": "installed",
+    "existing_skill_overwritten": false,
+    "runtime_matches_source": true,
+    "running_host_session_loaded": "not_verified"
+  }
+}

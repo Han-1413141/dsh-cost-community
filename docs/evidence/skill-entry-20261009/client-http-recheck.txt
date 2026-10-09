@@ -1,0 +1,9 @@
+✔ 隔离真实 HTTP：本地确认后保存服务端摘要和私密凭证，显式撤回后聚合归零 (131.568ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 474.6834

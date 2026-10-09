@@ -1,0 +1,13 @@
+{
+  "scope": "Local screenshot-only review of entry copy; GET/HEAD only, no production requests",
+  "checked_at": "2026-10-09T12:30:30.932Z",
+  "desktop": {
+    "viewport": 1440,
+    "width": 1440
+  },
+  "mobile": {
+    "viewport": 390,
+    "width": 390
+  },
+  "pageErrors": []
+}

@@ -1,0 +1,10 @@
+✔ prepare 只本地处理，原标识不进草稿；稳定工作流别名、完整字段预览及私有密钥 (42.1695ms)
+✔ 仅额度 prepare 明确未提供验收与实付数据，不生成零任务统计 (11.8704ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 411.2742

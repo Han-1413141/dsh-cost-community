@@ -1,0 +1,28 @@
+✔ prepare 只本地处理，原标识不进草稿；稳定工作流别名、完整字段预览及私有密钥 (54.9115ms)
+✔ 敏感字段、重复任务和缺少账单/验收不能被去标识或猜测补齐 (20.5603ms)
+✔ 明确确认与当前哈希缺一不可；payload/预览/端点变化及构造数据在联网前拒绝 (33.7285ms)
+✖ 隔离真实 HTTP：本地确认后保存服务端摘要和私密凭证，显式撤回后聚合归零 (90.8234ms)
+✔ 重定向与网络失败保留 unknown，原草稿不能自动重传 (54.5947ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 620.5318
+
+✖ failing tests:
+
+test at tests\client.test.js:111:1
+✖ 隔离真实 HTTP：本地确认后保存服务端摘要和私密凭证，显式撤回后聚合归零 (90.8234ms)
+  Error: 服务未确认请求结果（HTTP 500），发送记录已保留，不能自动重传。
+      at fail (file:///D:/codex%20projept/ai%E7%B2%BE%E8%8B%B1%E7%AB%9E%E8%B5%9B/DSH_AI%E5%BC%80%E6%BA%90_20261009/website/client/dsh-cost-contribute.mjs:16:41)
+      at uploadDraft (file:///D:/codex%20projept/ai%E7%B2%BE%E8%8B%B1%E7%AB%9E%E8%B5%9B/DSH_AI%E5%BC%80%E6%BA%90_20261009/website/client/dsh-cost-contribute.mjs:189:39)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///D:/codex%20projept/ai%E7%B2%BE%E8%8B%B1%E7%AB%9E%E8%B5%9B/DSH_AI%E5%BC%80%E6%BA%90_20261009/website/tests/client.test.js:121:20
+      at async withTemp (file:///D:/codex%20projept/ai%E7%B2%BE%E8%8B%B1%E7%AB%9E%E8%B5%9B/DSH_AI%E5%BC%80%E6%BA%90_20261009/website/tests/client.test.js:21:16)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    code: 'UPLOAD_OUTCOME_UNKNOWN'
+  }
