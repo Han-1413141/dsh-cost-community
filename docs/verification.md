@@ -46,3 +46,21 @@
 ## 试运行期限
 
 线上健康接口确认当前到期值 `2026-11-08T09:11:08Z`，即北京时间 2026 年 11 月 8 日 17:11:08。该期限属于本轮资源安排，不是长期数据留存承诺。个人分析支持导出，贡献支持下载撤回凭证。
+
+## 本轮验收统计与本地脱敏修复
+
+本轮只检查新增与受影响的隐私及验收边界，没有重跑前述全部测试，也没有连接生产 PostgreSQL。以下为本地代码验证，不能单独作为已部署证据。
+
+- `node --test tests/privacy.test.js`：5 项通过，0 失败。验证原任务先验重、窗口一致性、稳定 HMAC 与随机别名、不同工作流保留区分、脱敏前后验收/重试/成本口径一致、零验收成本为 null、上传拒绝原标识、服务端返回实际摘要与撤回。输出见 [定向单元与接口记录](evidence/privacy-acceptance-unit-api-20261009.txt)。
+- `node tests/privacy.browser.js`：8 项通过，0 失败、0 页面脚本错误。一次隔离 Chrome 检查了未同意不上传、实际网络正文与去标识预览一致、浏览器刷新后工作流别名稳定、IndexedDB 只保存不可导出的随机 CryptoKey、服务端摘要下载、披露门槛、本地导出、撤回和手机展示。结果见 [浏览器结果](evidence/privacy-acceptance-20261009/results.json)。
+- 桌面与手机贡献页截图均已复看：[桌面](evidence/privacy-acceptance-20261009/contribution-desktop.png)、[手机](evidence/privacy-acceptance-20261009/contribution-mobile.png)。截图中的数据是独立内存实例使用的构造测试记录，没有进入真实社区。
+
+浏览器检查在测试脚本内创建随机 loopback 端口和空 `MemoryTestStore`，结束后关闭浏览器与 HTTP 服务。没有增加生产调试接口，不保存原始任务标识，不改变数据库 schema。
+
+## AI 编码与开放分享说明补充
+
+首页补充“API 单价不等于完成任务的成本”和同预算关注验收任务数的说明，并将网站源码入口指向已公开的 `Han-1413141/dsh-cost-community`。GitHub 页面实际显示 Public 与 MIT license；原插件入口仍单独保留。
+
+本次只做一轮针对新增页面与下载文案的浏览器检查，没有重跑先前的上传、数据库和统计测试。检查了 1440×1080 与 390×844 首页、源码/许可证链接、贡献授权用途和本地导出：0 写请求、0 页面脚本错误、无整页横向溢出；下载仍是去标识摘要，不含原工作流名或任务明细。桌面和手机截图已复看。
+
+记录见 [开放分享检查](evidence/open-source-sharing-20261009/results.json)、[桌面首页](evidence/open-source-sharing-20261009/home-desktop.png)、[手机首页](evidence/open-source-sharing-20261009/home-mobile.png)。只访问临时 loopback 内存实例；完成后关闭实例。没有新增单份摘要公开接口、数据库结构或用户数据的默认许可，未改变已有贡献可见性。

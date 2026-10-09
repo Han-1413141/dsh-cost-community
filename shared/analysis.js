@@ -1,5 +1,5 @@
 export const METHOD_VERSION = '2.0.0';
-export const CONSENT_VERSION = '2026-10-09';
+export const CONSENT_VERSION = '2026-10-09-privacy-1';
 export const MINIMUM_CONTRIBUTIONS = 5;
 export const LIMITS = Object.freeze({ quotaSamples: 20, costPeriods: 12, tasks: 1000, bytes: 256 * 1024 });
 const ROOT = ['schema_version', 'dataset_kind', 'currency', 'quota_samples', 'cost_periods'];
@@ -135,7 +135,16 @@ export function analyzeDataset(data, { now = Date.now() } = {}) {
     totals: { quota_samples: quota_results.length, cost_periods: cost_results.length, attempted_tasks: cost_results.reduce((n, p) => n + p.attempted_tasks, 0), accepted_tasks: cost_results.reduce((n, p) => n + p.accepted_tasks, 0) } };
 }
 export function anonymizeAnalysis(result) {
+  // Statistical projection only. Local exports must first use prepareContribution;
+  // the server separately replaces workflow aliases before storing its summary.
   return { ...result, verification: 'self_reported_unverified', contains_raw_tasks: false, contains_raw_snapshots: false };
+}
+export function acceptanceSummary(rows) {
+  const sum = field => rows.reduce((total, row) => total + row[field], 0);
+  const attempted_tasks = sum('attempted_tasks'), accepted_tasks = sum('accepted_tasks');
+  return { attempted_tasks, accepted_tasks, unaccepted_tasks: attempted_tasks - accepted_tasks,
+    acceptance_rate: attempted_tasks ? Number((accepted_tasks / attempted_tasks).toFixed(6)) : null,
+    total_attempts: sum('total_attempts'), failed_attempts: sum('failed_attempts'), retry_attempts: sum('retry_attempts') };
 }
 export const QUOTA_GROUP_FIELDS = ['provider_id', 'plan_id', 'subject_kind', 'subject_id', 'quota_pool_id', 'price_snapshot_id', 'quota_source', 'window_type', 'coverage', 'window_duration_seconds', 'token_semantics', 'reasoning_in_output'];
 export const COST_GROUP_FIELDS = ['provider_id', 'plan_id', 'subject_kind', 'subject_id', 'task_type', 'difficulty', 'acceptance_standard', 'payment_category', 'period_duration_days', 'cohort_month'];

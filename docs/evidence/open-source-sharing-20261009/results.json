@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-09T10:55:54.915Z",
+  "scope": "new homepage, open-source links, voluntary sharing text, local export only",
+  "production_written": false,
+  "network_writes": 0,
+  "page_errors": [],
+  "observations": {
+    "source_links": [
+      {
+        "label": "网站完整源码前端 · 后端 · 统计计算 ↗",
+        "href": "https://github.com/Han-1413141/dsh-cost-community"
+      },
+      {
+        "label": "MIT 代码许可证查看使用和修改条件 ↗",
+        "href": "https://github.com/Han-1413141/dsh-cost-community/blob/main/LICENSE"
+      }
+    ],
+    "header_links_to_website_source": "https://github.com/Han-1413141/dsh-cost-community",
+    "desktop_overflow": false,
+    "mobile_overflow": false,
+    "consent_scope": "user-approved recalculation and public aggregation; independent summary publication and data license remain user decisions",
+    "download": {
+      "dataset_kind": "synthetic",
+      "contains_raw_tasks": false,
+      "contains_private_workflow_name": false,
+      "accepted_tasks": 2
+    }
+  },
+  "result": "passed"
+}

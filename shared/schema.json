@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:coding-cost:contribution:2.0",
+  "description": "本地输入格式。贡献前须先校验原任务标识，再由 prepareContribution 替换任务、窗口和工作流标识。上传接口另行检查别名格式；服务器重算后仅保存周期与额度摘要。",
   "type": "object", "additionalProperties": false,
   "required": ["schema_version", "dataset_kind", "currency", "quota_samples", "cost_periods"],
   "properties": {
@@ -42,6 +43,7 @@
       "properties": { "subscription_cny": { "$ref": "#/definitions/money" }, "overage_cny": { "$ref": "#/definitions/money" }, "other_api_cny": { "$ref": "#/definitions/money" }, "refund_cny": { "$ref": "#/definitions/money" } }
     },
     "task": {
+      "description": "一条不同任务的统计记录。attempt_count 包括首次尝试和重试；accepted 为该任务最终是否通过本周期统一声明的验收标准。任务标识仅用于周期内去重，原值不上传。",
       "type": "object", "additionalProperties": false, "required": ["task_id", "attempt_count", "accepted", "human_minutes", "token_usage", "api_equivalent_cny"],
       "properties": {
         "task_id": { "$ref": "#/definitions/id" }, "attempt_count": { "type": "integer", "minimum": 1, "maximum": 100 }, "accepted": { "type": "boolean" },

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-09T10:41:46.339Z",
+  "scope": "targeted privacy and acceptance changes only",
+  "storage": "isolated MemoryTestStore",
+  "production_written": false,
+  "passed": 8,
+  "failed": 0,
+  "results": [
+    {
+      "name": "贡献预览不触发 POST，未勾选不能提交；实际字段无原标识，验收统计为 3/2/1",
+      "status": "passed"
+    },
+    {
+      "name": "刷新后工作流别名稳定；IndexedDB 只存不可导出的 256 位 HMAC CryptoKey，无原文件、名称或映射",
+      "status": "passed"
+    },
+    {
+      "name": "主动同意后仅发送预览中的去标识逐任务记录；服务器剔除不合格额度并重新计算",
+      "status": "passed"
+    },
+    {
+      "name": "贡献摘要下载与服务器实际保存 summary 完全一致，原任务和工作流名未入库",
+      "status": "passed"
+    },
+    {
+      "name": "未达到 5 份贡献门槛时，新增验收统计不泄露隐藏指标",
+      "status": "passed"
+    },
+    {
+      "name": "本地分析摘要导出也替换工作流名，不增加上传请求",
+      "status": "passed"
+    },
+    {
+      "name": "撤回后隔离存储归零；未连接或写入生产数据库",
+      "status": "passed"
+    },
+    {
+      "name": "手机贡献页无整页横向溢出，清除预览后不能提交，浏览器无脚本错误",
+      "status": "passed"
+    }
+  ],
+  "page_errors": []
+}
