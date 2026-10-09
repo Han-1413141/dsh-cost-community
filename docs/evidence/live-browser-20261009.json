@@ -1,0 +1,195 @@
+{
+  "checked_at": "2026-10-09T09:44:07.430Z",
+  "origin": "https://dsh-cost-community.onrender.com",
+  "readonly": true,
+  "health": {
+    "ok": true,
+    "status": "ready",
+    "storage": "postgres",
+    "database_available": true,
+    "contributions_enabled": true,
+    "workflow_contributions_enabled": true,
+    "trial": {
+      "enabled": true,
+      "storage_expires_at": "2026-11-08T09:11:08Z"
+    }
+  },
+  "community": {
+    "ok": true,
+    "source": "user_reported_unverified",
+    "minimum_contributions": 5,
+    "totals": {
+      "contributions": 0,
+      "quota_samples": 0,
+      "cost_periods": 0
+    },
+    "quota_groups": [],
+    "cost_groups": []
+  },
+  "errors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "badResponses": [],
+  "blockedWrites": [],
+  "methods": [
+    "GET"
+  ],
+  "pages": [
+    {
+      "name": "home",
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1663,
+      "screenshot": "desktop-01-home.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "workspace",
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1600,
+      "screenshot": "desktop-02-workspace.png",
+      "hasDemoLabel": true
+    },
+    {
+      "name": "calculator",
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1226,
+      "screenshot": "desktop-03-calculator.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "community",
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1124,
+      "screenshot": "desktop-04-community-empty.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "contribute",
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1472,
+      "screenshot": "desktop-05-contribute.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "methods",
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 2635,
+      "screenshot": "desktop-06-methods.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "home",
+      "mobile": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1914,
+      "screenshot": "mobile-01-home.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "workspace",
+      "mobile": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1983,
+      "screenshot": "mobile-02-workspace.png",
+      "hasDemoLabel": true
+    },
+    {
+      "name": "calculator",
+      "mobile": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1815,
+      "screenshot": "mobile-03-calculator.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "community",
+      "mobile": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1166,
+      "screenshot": "mobile-04-community-empty.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "contribute",
+      "mobile": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2116,
+      "screenshot": "mobile-05-contribute.png",
+      "hasDemoLabel": null
+    },
+    {
+      "name": "methods",
+      "mobile": true,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 3168,
+      "screenshot": "mobile-06-methods.png",
+      "hasDemoLabel": null
+    }
+  ]
+}

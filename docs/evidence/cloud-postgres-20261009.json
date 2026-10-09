@@ -1,0 +1,23 @@
+{
+  "source": "Render official API /logs",
+  "service_id": "srv-db4bb97lot8c738f49c0",
+  "deploy_id": "dep-db4bb9nlot8c738f4b60",
+  "source_commit": "5294d1c000e52a8061fc24b9ff4aff04e06a8ef8",
+  "executed_at": "2026-10-09T09:37:01.920941071Z",
+  "environment": "Render Node web service, Singapore; same-region internal PostgreSQL 17 connection",
+  "command": "TEST_DATABASE_URL=\"$DATABASE_URL\" node --test tests/postgres.test.js && npm start",
+  "scope": "One randomly generated test_<hex> schema, removed in finally; no production contribution rows",
+  "log_excerpt": [
+    "✔ 真实Postgres：独立随机schema内集中验证持久化、唯一约束、汇总与事务撤回 (634.386578ms)",
+    "ℹ tests 1",
+    "ℹ pass 1",
+    "ℹ fail 0",
+    "ℹ skipped 0",
+    "Application listening on port 10000; storage=postgres"
+  ],
+  "verified": true,
+  "final_start_command": "npm start",
+  "start_command_restored_at": "2026-10-09T09:40:37.191254Z",
+  "production_community_after_check": {"contributions":0,"quota_samples":0,"cost_periods":0},
+  "note": "Earlier local public-network attempt remains recorded separately as failed. This record reports the successful internal cloud execution."
+}
