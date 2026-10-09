@@ -59,7 +59,7 @@ export function createApp({ store = new UnconfiguredStore(), appOrigin = 'http:/
     if (res.headersSent) return;
     if (err.type === 'entity.too.large') return error(res, 413, 'PAYLOAD_TOO_LARGE', '文件超过 256 KiB。');
     if (err.type === 'entity.parse.failed') return error(res, 400, 'INVALID_JSON', '正文不是有效 JSON。');
-    if (err instanceof ValidationError) return error(res, err.code === 'CONSENT_REQUIRED' ? 403 : 422, err.code, err.message, err.path);
+    if (err instanceof ValidationError) return error(res, ['CONSENT_REQUIRED', 'WORK_SUMMARY_REVIEW_REQUIRED'].includes(err.code) ? 403 : 422, err.code, err.message, err.path);
     if (err instanceof DuplicateContribution) return error(res, 409, err.code, '贡献或其中的样本已存在，请勿重复上传。');
     if (err instanceof StorageUnavailable) return error(res, 503, 'STORAGE_UNAVAILABLE', '持久数据库未配置或暂不可用，本次操作未完成。');
     if (err.code === 'ENOENT') return error(res, 404, 'NOT_FOUND', '页面尚未部署。');

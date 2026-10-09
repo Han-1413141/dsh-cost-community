@@ -1,0 +1,49 @@
+{
+  "scope": "Loopback MemoryTestStore only; constructed inputs; no production writes",
+  "checked_at": "2026-10-09T12:09:06.763Z",
+  "consent_version": "2026-10-09-work-summary-1",
+  "passed": 7,
+  "checks": [
+    {
+      "name": "添加摘要并将本地137行转换为51–200行；实际发送数据仅保留三个枚举字段，无原名称或精确行数",
+      "status": "passed"
+    },
+    {
+      "name": "有摘要须分别确认逐项核对与分享；任何编辑更新实际预览并取消两项确认",
+      "status": "passed"
+    },
+    {
+      "name": "移除摘要只删除可选字段；三项任务、验收结果和完整周期费用均保留",
+      "status": "passed"
+    },
+    {
+      "name": "主动确认后发送冻结的实际预览与新授权版本；隔离服务器保存/下载的是工作摘要计数，提交中不可编辑",
+      "status": "passed"
+    },
+    {
+      "name": "构造样例可本地编辑但不能提交；1440桌面与390手机无整页溢出，任务表仅内部横滚",
+      "status": "passed",
+      "desktop": {
+        "viewport": 1440,
+        "width": 1440
+      },
+      "mobile": {
+        "viewport": 390,
+        "width": 390,
+        "tableScroll": 630,
+        "tableWidth": 302
+      }
+    },
+    {
+      "name": "成本分析呈现填写摘要任务数、功能类别、代码变更区间与难度分布",
+      "status": "passed"
+    },
+    {
+      "name": "无浏览器脚本错误、无外部请求、无生产写入",
+      "status": "passed"
+    }
+  ],
+  "pageErrors": [],
+  "outsideRequests": [],
+  "isolatedPosts": 1
+}

@@ -1,22 +1,28 @@
 export const METHOD_VERSION = '2.0.0';
-export const CONSENT_VERSION = '2026-10-09-privacy-1';
+export const CONSENT_VERSION = '2026-10-09-work-summary-1';
 export const MINIMUM_CONTRIBUTIONS = 5;
 export const LIMITS = Object.freeze({ quotaSamples: 20, costPeriods: 12, tasks: 1000, bytes: 256 * 1024 });
 const ROOT = ['schema_version', 'dataset_kind', 'currency', 'quota_samples', 'cost_periods'];
 const QUOTA = ['provider_id', 'plan_id', 'subject_kind', 'subject_id', 'quota_pool_id', 'window_id', 'window_start', 'window_end', 'price_snapshot_id', 'quota_source', 'window_type', 'coverage', 'before', 'after'];
 const SNAPSHOT = ['observed_at', 'used_percent', 'token_usage', 'api_equivalent_cny'];
 const PERIOD = ['provider_id', 'plan_id', 'subject_kind', 'subject_id', 'period_start', 'period_end', 'complete_period', 'all_attempted_tasks_included', 'task_type', 'difficulty', 'acceptance_standard', 'payment_category', 'costs', 'tasks'];
-const TASK = ['task_id', 'attempt_count', 'accepted', 'human_minutes', 'token_usage', 'api_equivalent_cny'];
+const TASK = ['task_id', 'attempt_count', 'accepted', 'human_minutes', 'token_usage', 'api_equivalent_cny', 'work_summary'];
+const WORK_SUMMARY = ['function_category', 'code_change_band', 'difficulty'];
 const TOKENS = ['token_semantics', 'reasoning_in_output', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'reasoning_tokens', 'normalized_total_tokens'];
 export const ENUMS = Object.freeze({ taskTypes: ['bugfix', 'feature', 'refactor', 'tests', 'docs'], difficulties: ['simple', 'medium', 'complex'], acceptanceStandards: ['test_suite_passed', 'review_approved', 'spec_checklist_passed'] });
+export const WORK_SUMMARY_ENUMS = Object.freeze({
+  functionCategories: ['interface', 'api', 'data_processing', 'automation', 'integration', 'infrastructure', 'testing', 'documentation', 'other'],
+  codeChangeBands: ['not_applicable', '1_50', '51_200', '201_500', '501_1000', '1000_plus'],
+  difficulties: ENUMS.difficulties
+});
 export class ValidationError extends Error {
   constructor(code, path, message) { super(message); this.name = 'ValidationError'; this.code = code; this.path = path; }
 }
 function reject(code, path, message) { throw new ValidationError(code, path, message); }
-function fields(value, allowed, path) {
+function fields(value, allowed, path, optional = []) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) reject('TYPE', path, '必须是 JSON 对象。');
   for (const key of Object.keys(value)) if (!allowed.includes(key)) reject('UNKNOWN_FIELD', path, '含有未允许字段；请移除提示词、代码、账号、邮箱和密钥等内容。');
-  for (const key of allowed) if (!Object.prototype.hasOwnProperty.call(value, key)) reject('MISSING_FIELD', `${path}.${key}`, '缺少必填字段，不能用猜测值代替。');
+  for (const key of allowed) if (!optional.includes(key) && !Object.prototype.hasOwnProperty.call(value, key)) reject('MISSING_FIELD', `${path}.${key}`, '缺少必填字段，不能用猜测值代替。');
 }
 function enumeration(v, options, path) { if (!options.includes(v)) reject('ENUM', path, '字段取值不在允许列表内。'); }
 function identifier(v, path) {
@@ -31,6 +37,33 @@ function utc(v, path) {
 function array(v, path, min, max) { if (!Array.isArray(v) || v.length < min || v.length > max) reject('ARRAY', path, `数组数量须为 ${min}–${max}。`); }
 function unique(v, set, path) { if (set.has(v)) reject('DUPLICATE', path, '存在重复任务或支付周期，不能重复计入。'); set.add(v); }
 const round = v => Number(v.toFixed(6));
+function emptyWorkSummaryCounts() {
+  const zero = values => Object.fromEntries(values.map(value => [value, 0]));
+  return { summarized_tasks: 0, function_category: zero(WORK_SUMMARY_ENUMS.functionCategories),
+    code_change_band: zero(WORK_SUMMARY_ENUMS.codeChangeBands), difficulty: zero(WORK_SUMMARY_ENUMS.difficulties) };
+}
+export function hasWorkSummaries(data) {
+  return Array.isArray(data?.cost_periods) && data.cost_periods.some(period => Array.isArray(period?.tasks) && period.tasks.some(task => task && Object.prototype.hasOwnProperty.call(task, 'work_summary')));
+}
+export function summarizeWorkSummaries(rows) {
+  const total = emptyWorkSummaryCounts();
+  for (const row of rows) {
+    const counts = row.work_summary_counts;
+    if (!counts) continue; // Records created before this optional field remain compatible.
+    total.summarized_tasks += counts.summarized_tasks;
+    for (const field of WORK_SUMMARY) for (const value of Object.keys(total[field])) total[field][value] += counts[field]?.[value] ?? 0;
+  }
+  return total;
+}
+function addWorkSummary(value, expectedDifficulty, counts, path) {
+  fields(value, WORK_SUMMARY, path);
+  enumeration(value.function_category, WORK_SUMMARY_ENUMS.functionCategories, `${path}.function_category`);
+  enumeration(value.code_change_band, WORK_SUMMARY_ENUMS.codeChangeBands, `${path}.code_change_band`);
+  enumeration(value.difficulty, WORK_SUMMARY_ENUMS.difficulties, `${path}.difficulty`);
+  if (value.difficulty !== expectedDifficulty) reject('WORK_SUMMARY_DIFFICULTY', `${path}.difficulty`, '任务摘要难度必须与本周期的难度分组一致。');
+  counts.summarized_tasks++;
+  for (const field of WORK_SUMMARY) counts[field][value[field]]++;
+}
 export function validateTokenUsage(t, path = '$.token_usage') {
   fields(t, TOKENS, path); enumeration(t.token_semantics, ['input_includes_cache', 'input_excludes_cache'], `${path}.token_semantics`);
   if (typeof t.reasoning_in_output !== 'boolean') reject('TOKEN_SEMANTICS', path, '必须明确 reasoning 是否已包含在 output 中。');
@@ -86,13 +119,14 @@ function cost(p, path, isReal, now) {
   const net = round(p.costs.subscription_cny + p.costs.overage_cny + p.costs.other_api_cny - p.costs.refund_cny);
   if (net < 0) reject('NEGATIVE_NET_COST', `${path}.costs`, '已确认退款不能超过本期支付合计。');
   array(p.tasks, `${path}.tasks`, 1, LIMITS.tasks);
-  const ids = new Set(); let accepted = 0, attempts = 0, human = 0, tokens = 0, equivalent = 0;
+  const ids = new Set(), work_summary_counts = emptyWorkSummaryCounts(); let accepted = 0, attempts = 0, human = 0, tokens = 0, equivalent = 0;
   p.tasks.forEach((t, i) => {
-    const tp = `${path}.tasks[${i}]`; fields(t, TASK, tp); identifier(t.task_id, `${tp}.task_id`); unique(t.task_id, ids, tp);
+    const tp = `${path}.tasks[${i}]`; fields(t, TASK, tp, ['work_summary']); identifier(t.task_id, `${tp}.task_id`); unique(t.task_id, ids, tp);
     numeric(t.attempt_count, `${tp}.attempt_count`, 100, true); if (t.attempt_count < 1) reject('ATTEMPTS', tp, '每个任务至少有一次尝试。');
     if (typeof t.accepted !== 'boolean') reject('BOOLEAN', `${tp}.accepted`, 'accepted 须为 true 或 false。');
     numeric(t.human_minutes, `${tp}.human_minutes`, 1e6); numeric(t.api_equivalent_cny, `${tp}.api_equivalent_cny`);
     tokens += validateTokenUsage(t.token_usage, `${tp}.token_usage`); accepted += Number(t.accepted); attempts += t.attempt_count; human += t.human_minutes; equivalent += t.api_equivalent_cny;
+    if (Object.prototype.hasOwnProperty.call(t, 'work_summary')) addWorkSummary(t.work_summary, p.difficulty, work_summary_counts, `${tp}.work_summary`);
   });
   return {
     provider_id: p.provider_id, plan_id: p.plan_id, subject_kind: p.subject_kind, subject_id: p.subject_id,
@@ -102,7 +136,7 @@ function cost(p, path, isReal, now) {
     net_paid_cny: net, attempted_tasks: p.tasks.length, accepted_tasks: accepted, acceptance_rate: round(accepted / p.tasks.length),
     total_attempts: attempts, failed_attempts: attempts - accepted, retry_attempts: attempts - p.tasks.length,
     human_minutes: round(human), normalized_total_tokens: tokens, api_equivalent_cny: round(equivalent),
-    paid_cny_per_accepted_task: accepted ? round(net / accepted) : null
+    paid_cny_per_accepted_task: accepted ? round(net / accepted) : null, work_summary_counts
   };
 }
 export function analyzeDataset(data, { now = Date.now() } = {}) {
@@ -157,7 +191,8 @@ export function communityFromRows(contributions, minimum = MINIMUM_CONTRIBUTIONS
       for (const row of rows) {
         if (kind === 'quota' && row.community_eligible !== true) continue;
         const group = pickGroup(row, kind), key = JSON.stringify(group); let item = maps[kind].get(key);
-        if (!item) { item = { group, ids: new Set(), rows: [] }; maps[kind].set(key, item); }
+        if (!item) { item = { group, ids: new Set(), workSummaryIds: new Set(), rows: [] }; maps[kind].set(key, item); }
+        if (kind === 'cost' && row.work_summary_counts?.summarized_tasks > 0) item.workSummaryIds.add(contribution.id);
         item.ids.add(contribution.id); item.rows.push(row); if (kind === 'quota') quotaCount++; else periodCount++;
       }
     }
@@ -167,7 +202,10 @@ export function communityFromRows(contributions, minimum = MINIMUM_CONTRIBUTIONS
     const published = entry.ids.size >= minimum, result = { group: entry.group, contribution_count: entry.ids.size, [kind === 'quota' ? 'sample_count' : 'period_count']: entry.rows.length, published, metrics: null };
     if (!published) return result;
     if (kind === 'quota') { const pp = sum(entry.rows, 'delta_percentage_points'), tokens = sum(entry.rows, 'delta_tokens'), equivalent = sum(entry.rows, 'delta_api_equivalent_cny'); result.metrics = { delta_percentage_points: pp, delta_tokens: tokens, delta_api_equivalent_cny: equivalent, tokens_per_percentage_point: round(tokens / pp), api_equivalent_cny_per_percentage_point: round(equivalent / pp) }; }
-    else { const keys = ['net_paid_cny', 'attempted_tasks', 'accepted_tasks', 'total_attempts', 'failed_attempts', 'retry_attempts', 'human_minutes', 'normalized_total_tokens', 'api_equivalent_cny']; const m = Object.fromEntries(keys.map(key => [key, sum(entry.rows, key)])); m.acceptance_rate = round(m.accepted_tasks / m.attempted_tasks); m.paid_cny_per_accepted_task = m.accepted_tasks ? round(m.net_paid_cny / m.accepted_tasks) : null; result.metrics = m; }
+    else { const keys = ['net_paid_cny', 'attempted_tasks', 'accepted_tasks', 'total_attempts', 'failed_attempts', 'retry_attempts', 'human_minutes', 'normalized_total_tokens', 'api_equivalent_cny']; const m = Object.fromEntries(keys.map(key => [key, sum(entry.rows, key)])); m.acceptance_rate = round(m.accepted_tasks / m.attempted_tasks); m.paid_cny_per_accepted_task = m.accepted_tasks ? round(m.net_paid_cny / m.accepted_tasks) : null;
+      m.work_summary_contribution_count = entry.workSummaryIds.size;
+      m.work_summary_counts = entry.workSummaryIds.size >= minimum ? summarizeWorkSummaries(entry.rows) : null;
+      result.metrics = m; }
     return result;
   };
   return { ok: true, source: 'user_reported_unverified', minimum_contributions: minimum,

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:coding-cost:contribution:2.0",
-  "description": "本地输入格式。贡献前须先校验原任务标识，再由 prepareContribution 替换任务、窗口和工作流标识。上传接口另行检查别名格式；服务器重算后仅保存周期与额度摘要。",
+  "description": "本地输入格式。贡献前须先校验原任务标识，再由 prepareContribution 替换任务、窗口和工作流标识。可选工作摘要只接受功能类别、代码量区间和与周期一致的难度枚举，不接收自由描述、源码、路径或原始行数。服务器重算后仅保存周期与额度摘要及工作摘要计数分布。",
   "type": "object", "additionalProperties": false,
   "required": ["schema_version", "dataset_kind", "currency", "quota_samples", "cost_periods"],
   "properties": {
@@ -42,12 +42,23 @@
       "type": "object", "additionalProperties": false, "required": ["subscription_cny", "overage_cny", "other_api_cny", "refund_cny"],
       "properties": { "subscription_cny": { "$ref": "#/definitions/money" }, "overage_cny": { "$ref": "#/definitions/money" }, "other_api_cny": { "$ref": "#/definitions/money" }, "refund_cny": { "$ref": "#/definitions/money" } }
     },
+    "work_summary": {
+      "type": "object", "additionalProperties": false,
+      "description": "可选脱敏工作摘要。仅用封闭枚举描述工作类别和规模；难度须与所属周期一致。代码行数区间只描述规模，不用于产出质量或性价比排名。",
+      "required": ["function_category", "code_change_band", "difficulty"],
+      "properties": {
+        "function_category": { "enum": ["interface", "api", "data_processing", "automation", "integration", "infrastructure", "testing", "documentation", "other"] },
+        "code_change_band": { "enum": ["not_applicable", "1_50", "51_200", "201_500", "501_1000", "1000_plus"] },
+        "difficulty": { "enum": ["simple", "medium", "complex"] }
+      }
+    },
     "task": {
       "description": "一条不同任务的统计记录。attempt_count 包括首次尝试和重试；accepted 为该任务最终是否通过本周期统一声明的验收标准。任务标识仅用于周期内去重，原值不上传。",
       "type": "object", "additionalProperties": false, "required": ["task_id", "attempt_count", "accepted", "human_minutes", "token_usage", "api_equivalent_cny"],
       "properties": {
         "task_id": { "$ref": "#/definitions/id" }, "attempt_count": { "type": "integer", "minimum": 1, "maximum": 100 }, "accepted": { "type": "boolean" },
-        "human_minutes": { "type": "number", "minimum": 0, "maximum": 1000000 }, "token_usage": { "$ref": "#/definitions/token_usage" }, "api_equivalent_cny": { "$ref": "#/definitions/money" }
+        "human_minutes": { "type": "number", "minimum": 0, "maximum": 1000000 }, "token_usage": { "$ref": "#/definitions/token_usage" }, "api_equivalent_cny": { "$ref": "#/definitions/money" },
+        "work_summary": { "$ref": "#/definitions/work_summary" }
       }
     },
     "period": {

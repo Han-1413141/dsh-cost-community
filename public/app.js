@@ -1,4 +1,4 @@
-import { analyzeDataset, anonymizeAnalysis, acceptanceSummary, CONSENT_VERSION } from '/shared/analysis.js';
+import { analyzeDataset, anonymizeAnalysis, acceptanceSummary, CONSENT_VERSION, WORK_SUMMARY_ENUMS, hasWorkSummaries, summarizeWorkSummaries } from '/shared/analysis.js';
 import { prepareContribution } from '/shared/privacy.js';
 
 const $ = (selector, parent = document) => parent.querySelector(selector);
@@ -10,12 +10,20 @@ const labels = {bugfix:'缺陷修复',feature:'功能开发',refactor:'代码重
 const label = value => labels[value] || value || '未声明';
 let activeRoute = 'home';
 let contributionData = null;
+let contributionSource = null;
+let contributionDrafts = new Map();
+let contributionPreviewPending = false;
+let contributionSubmitting = false;
+let contributionSubmitted = false;
+let contributionDemo = false;
 let contributionGeneration = 0;
 let localGeneration = 0;
 let receipt = null;
 let localResult = null;
 let communityLoading = false;
 let serviceHealth = null;
+const functionLabels={interface:'界面功能',api:'接口服务',data_processing:'数据处理',automation:'自动化',integration:'系统集成',infrastructure:'基础设施',testing:'测试',documentation:'文档',other:'其他'};
+const bandLabels={not_applicable:'不涉及代码行','1_50':'1–50 行','51_200':'51–200 行','201_500':'201–500 行','501_1000':'501–1,000 行','1000_plus':'1,000 行以上'};
 
 function setStatus(element, message, type = '') {
   element.textContent = message;
@@ -68,6 +76,12 @@ function acceptanceBlock(rows) {
   const s = acceptanceSummary(rows);
   return `<section class="acceptance-statistics" aria-label="验收任务统计"><div class="acceptance-heading"><h3>验收任务统计</h3><span>每个完整周期内按任务去重，再合计</span></div><div class="acceptance-values"><div data-field="attempted_tasks">${metric('不同任务总数',number(s.attempted_tasks),'项')}</div><div data-field="accepted_tasks">${metric('已验收任务',number(s.accepted_tasks),'项')}</div><div data-field="unaccepted_tasks">${metric('未验收任务',number(s.unaccepted_tasks),'项')}</div><div data-field="acceptance_rate">${metric('任务验收率',s.acceptance_rate === null ? '—' : number(s.acceptance_rate * 100,1),'%')}</div></div><p class="acceptance-attempts">全部尝试 <strong>${number(s.total_attempts)}</strong> 次 · 重试 <strong>${number(s.retry_attempts)}</strong> 次 · 未通过验收的尝试 <strong>${number(s.failed_attempts)}</strong> 次</p><p class="footnote">每项任务最多计一次验收通过；重试不增加不同任务数。各周期分别计数，不代表跨周期去重后的项目或用户数。</p></section>`;
 }
+function workSummaryBlock(rows) {
+  const counts=summarizeWorkSummaries(rows);
+  if(!counts.summarized_tasks)return '';
+  const groups=[['功能类别',counts.function_category,functionLabels],['代码变更区间',counts.code_change_band,bandLabels],['任务难度',counts.difficulty,labels]];
+  return `<section class="work-summary-statistics" aria-label="脱敏工作摘要统计"><div class="work-summary-stat-heading"><h3>工作量与难度分布</h3><span>${number(counts.summarized_tasks)} 项任务填写摘要</span></div><div class="work-summary-distributions">${groups.map(([title,values,names])=>`<div><h4>${title}</h4>${Object.entries(values).filter(([,count])=>count>0).map(([value,count])=>`<p><span>${escapeHTML(names[value]||value)}</span><strong>${number(count)}<small> 项</small></strong></p>`).join('')}</div>`).join('')}</div><p class="footnote">按填写摘要的任务计数，未填写不推算。只展示类别和区间，不包含代码、精确行数或具体业务描述。</p></section>`;
+}
 function quotaPanel(q, raw, demo) {
   const before = raw?.before?.used_percent ?? 0;
   const after = raw?.after?.used_percent ?? q.delta_percentage_points;
@@ -85,7 +99,7 @@ function costPanel(rows, demo) {
   const chips = [label(first.task_type),label(first.difficulty),label(first.acceptance_standard),`${first.period_duration_days} 天完整周期`,first.cohort_month,first.payment_category && label(first.payment_category)].filter(Boolean);
   const anyNull = rows.some(row => row.paid_cny_per_accepted_task === null);
   const insight = anyNull ? '验收数为 0 时，单位任务成本显示“—”；周期支出仍保留，不记为零成本。' : '一起看净实付、验收率与人工时间；单项金额更低，并不自动代表整体更划算。';
-  return `<section class="panel"><div class="panel-header"><div><h2>${escapeHTML(label(first.task_type))} · 同组任务比较</h2><p>${demo ? '构造样例展示成本与人工投入之间的取舍' : '仅在以下条件一致的记录之间比较'}</p></div><span class="small-label">TASK VALUE</span></div><div class="group-chips">${chips.map(c => `<span>${escapeHTML(c)}</span>`).join('')}</div>${acceptanceBlock(rows)}<div class="comparison-charts">${barChart(rows,'paid_cny_per_accepted_task','每项验收任务净实付','元')}${barChart(rows,'human_minutes','人工投入总时长','分钟',true)}</div><div class="insight-strip">${insight}</div><div class="table-scroll"><table class="data-table"><caption class="sr-only">同组任务成本、验收与尝试次数</caption><thead><tr><th>套餐 / 统计对象</th><th>净实付</th><th>验收 / 全部任务</th><th>验收率</th><th>全部尝试</th><th>未通过验收的尝试</th><th>重试次数</th></tr></thead><tbody>${rows.map(p => `<tr><td><strong>${escapeHTML(publicName(p))}</strong><br><small>${escapeHTML(p.subject_id)} · ${escapeHTML(label(p.subject_kind))}</small></td><td>¥ ${money(p.net_paid_cny)}</td><td>${p.accepted_tasks} / ${p.attempted_tasks}</td><td>${number(p.acceptance_rate * 100,1)}%</td><td>${p.total_attempts}</td><td>${p.failed_attempts}</td><td>${p.retry_attempts}</td></tr>`).join('')}</tbody></table></div><div class="panel-foot">净实付 = 订阅 + 超额 + 其他 API − 退款。失败与重试支出保留在周期总额中；验收率按全部不同任务计算。</div></section>`;
+  return `<section class="panel"><div class="panel-header"><div><h2>${escapeHTML(label(first.task_type))} · 同组任务比较</h2><p>${demo ? '构造样例展示成本与人工投入之间的取舍' : '仅在以下条件一致的记录之间比较'}</p></div><span class="small-label">TASK VALUE</span></div><div class="group-chips">${chips.map(c => `<span>${escapeHTML(c)}</span>`).join('')}</div>${acceptanceBlock(rows)}${workSummaryBlock(rows)}<div class="comparison-charts">${barChart(rows,'paid_cny_per_accepted_task','每项验收任务净实付','元')}${barChart(rows,'human_minutes','人工投入总时长','分钟',true)}</div><div class="insight-strip">${insight}</div><div class="table-scroll"><table class="data-table"><caption class="sr-only">同组任务成本、验收与尝试次数</caption><thead><tr><th>套餐 / 统计对象</th><th>净实付</th><th>验收 / 全部任务</th><th>验收率</th><th>全部尝试</th><th>未通过验收的尝试</th><th>重试次数</th></tr></thead><tbody>${rows.map(p => `<tr><td><strong>${escapeHTML(publicName(p))}</strong><br><small>${escapeHTML(p.subject_id)} · ${escapeHTML(label(p.subject_kind))}</small></td><td>¥ ${money(p.net_paid_cny)}</td><td>${p.accepted_tasks} / ${p.attempted_tasks}</td><td>${number(p.acceptance_rate * 100,1)}%</td><td>${p.total_attempts}</td><td>${p.failed_attempts}</td><td>${p.retry_attempts}</td></tr>`).join('')}</tbody></table></div><div class="panel-foot">净实付 = 订阅 + 超额 + 其他 API − 退款。失败与重试支出保留在周期总额中；验收率按全部不同任务计算。</div></section>`;
 }
 function groupCosts(rows) {
   const groups = new Map();
@@ -187,7 +201,7 @@ loadHealth();
 function communityGroup(item,kind,minimum) {
   const g=item.group,meta=kind==='quota'?[`${number(g.window_duration_seconds/3600,1)} 小时窗口`,g.quota_source&&label(g.quota_source),g.window_type&&label(g.window_type),g.coverage&&label(g.coverage)]:[label(g.task_type),label(g.difficulty),label(g.acceptance_standard),`${g.period_duration_days} 天`,g.cohort_month,g.payment_category&&label(g.payment_category)];
   const m=item.metrics;
-  const metrics=item.published&&m ? `<div class="quota-values">${kind==='quota'?metric('每 1% 对应 Token',number(m.tokens_per_percentage_point),'Token')+metric('每 1% API 等价费用',number(m.api_equivalent_cny_per_percentage_point,4),'元'):metric('每项验收任务净实付',money(m.paid_cny_per_accepted_task),'元')+metric('人工投入',number(m.human_minutes),'分钟')}</div>${kind==='cost'?acceptanceBlock([m]):''}`:'';
+  const metrics=item.published&&m ? `<div class="quota-values">${kind==='quota'?metric('每 1% 对应 Token',number(m.tokens_per_percentage_point),'Token')+metric('每 1% API 等价费用',number(m.api_equivalent_cny_per_percentage_point,4),'元'):metric('每项验收任务净实付',money(m.paid_cny_per_accepted_task),'元')+metric('人工投入',number(m.human_minutes),'分钟')}</div>${kind==='cost'?acceptanceBlock([m])+workSummaryBlock([m]):''}`:'';
   return `<article class="panel community-group"><div class="community-group-head"><div><h3>${escapeHTML(g.plan_id)} · ${escapeHTML(g.subject_id)}</h3><p>${escapeHTML(g.provider_id)} · ${escapeHTML(label(g.subject_kind))} · ${kind==='quota'?'额度价值':'任务成本'}</p></div><span class="status-badge ${item.published?'badge-teal':'badge-blue'}">${item.published?'已达到披露门槛':`积累样本 · ${item.contribution_count}/${minimum} 份贡献编号`}</span></div><div class="group-chips">${meta.filter(Boolean).map(v=>`<span>${escapeHTML(v)}</span>`).join('')}</div>${metrics}<p>${item.contribution_count} 份不同贡献编号 · ${item.sample_count??item.period_count} ${kind==='quota'?'组额度样本':'个完整周期'}${item.published?' · 用户自报、未经逐条独立核验':' · 未达披露门槛，指标暂不公开'}</p></article>`;
 }
 async function loadCommunity() {
@@ -203,31 +217,105 @@ async function loadCommunity() {
 $('#refresh-community').addEventListener('click',loadCommunity);
 
 function resetContribution() {
-  contributionGeneration++;contributionData=null;$('#contribution-preview').replaceChildren();$('#contribution-preview').hidden=true;$('#consent-area').hidden=true;$('#contribution-consent').checked=false;$('#submit-contribution').disabled=true;setStatus($('#contribution-status'),'');
+  contributionGeneration++;contributionData=null;contributionSource=null;contributionDrafts.clear();contributionDemo=false;contributionSubmitted=false;contributionPreviewPending=false;
+  $('#contribution-preview').replaceChildren();$('#contribution-preview').hidden=true;$('#consent-area').hidden=true;$('#contribution-consent').checked=false;$('#contribution-consent').disabled=false;$('#work-summary-reviewed').checked=false;$('#work-summary-reviewed').disabled=false;$('#work-summary-review-label').hidden=true;$('#submit-contribution').disabled=true;setStatus($('#contribution-status'),'');
 }
-$('#contribution-file').addEventListener('change',async event=>{
-  resetContribution();const generation=contributionGeneration;try{
-    const data=await readJSON(event.target.files[0]);if(!data)return;
-    analyzeDataset(data);
-    if(data.dataset_kind!=='user_reported')throw new Error('构造样例只能在工作台体验，不能贡献到真实社区。请使用自己有权分享的真实脱敏记录。');
+function updateSubmitAvailability(){
+  const needsReview=contributionData&&hasWorkSummaries(contributionData);
+  $('#submit-contribution').disabled=contributionSubmitting||contributionSubmitted||contributionPreviewPending||contributionDemo||!contributionData||!$('#contribution-consent').checked||(needsReview&&!$('#work-summary-reviewed').checked);
+}
+function cancelContributionConfirmation(){
+  $('#contribution-consent').checked=false;$('#work-summary-reviewed').checked=false;updateSubmitAvailability();
+}
+function workSummaryEditor(){
+  if(!contributionSource.cost_periods.length)return '<p class="footnote">这份文件只含额度记录，无需补充任务工作摘要。</p>';
+  const options=(values,names,current)=>'<option value="">请选择</option>'+values.map(value=>`<option value="${value}"${current===value?' selected':''}>${escapeHTML(names[value])}</option>`).join('');
+  return `<details class="work-summary-editor" open><summary><strong>补充工作摘要</strong><span>可选 · 只分享类别、区间和难度</span></summary><p class="work-summary-intro">逐项选择实现的功能类别与代码变更区间。可以只在本地填写行数，网站自动转成区间；具体行数和业务描述不发送。</p><div class="work-summary-table-scroll"><table class="work-summary-table"><caption class="sr-only">逐任务核对工作摘要；移除摘要不删除任务及费用记录</caption><thead><tr><th>任务</th><th>功能类别</th><th>代码变更区间</th><th>难度</th><th>操作</th></tr></thead><tbody>${contributionSource.cost_periods.map((period,pi)=>`<tr class="work-period-heading"><th colspan="5">周期 ${pi+1} · ${escapeHTML(label(period.task_type))} · ${escapeHTML(label(period.difficulty))} · ${period.tasks.length} 项任务</th></tr>${period.tasks.map((task,ti)=>{
+    const key=`${pi}:${ti}`,d=contributionDrafts.get(key),id=`work-${pi}-${ti}`;
+    return `<tr data-work-key="${key}"><td><strong>任务 ${ti+1}</strong><small>${task.accepted?'已验收':'未验收'} · ${task.attempt_count} 次尝试</small></td><td><select id="${id}-category" data-work-field="function_category" aria-label="周期${pi+1}任务${ti+1}功能类别"${d.enabled?'':' disabled'}>${options(WORK_SUMMARY_ENUMS.functionCategories,functionLabels,d.function_category)}</select></td><td><select id="${id}-band" data-work-field="code_change_band" aria-label="周期${pi+1}任务${ti+1}代码变更区间"${d.enabled?'':' disabled'}>${options(WORK_SUMMARY_ENUMS.codeChangeBands,bandLabels,d.code_change_band)}</select><label class="local-lines-label">本地行数换算<input id="${id}-lines" data-work-field="local_lines" type="number" min="0" max="1000000000" step="1" inputmode="numeric" placeholder="不发送" aria-label="周期${pi+1}任务${ti+1}本地行数"${d.enabled?'':' disabled'}></label><span class="work-row-error" role="status"></span></td><td><span class="work-difficulty">${escapeHTML(label(period.difficulty))}</span><small>沿用本组</small></td><td><button type="button" class="work-toggle" data-work-toggle>${d.enabled?'移除摘要':'添加摘要'}</button></td></tr>`;
+  }).join('')}`).join('')}</tbody></table></div><p class="footnote">移除摘要只删除这三个可选字段，原任务、验收结果与费用仍保留。摘要难度沿用所属周期，保持同组比较条件一致。</p></details>`;
+}
+function candidateWithWorkSummaries(){
+  const data=structuredClone(contributionSource);let pending=0;
+  data.cost_periods.forEach((period,pi)=>period.tasks.forEach((task,ti)=>{
+    const draft=contributionDrafts.get(`${pi}:${ti}`);delete task.work_summary;
+    if(!draft.enabled)return;
+    if(draft.invalidLines||!draft.function_category||!draft.code_change_band){pending++;return;}
+    task.work_summary={function_category:draft.function_category,code_change_band:draft.code_change_band,difficulty:period.difficulty};
+  }));
+  return {data,pending};
+}
+async function refreshContributionPreview(){
+  const generation=++contributionGeneration;cancelContributionConfirmation();contributionPreviewPending=true;contributionData=null;updateSubmitAvailability();
+  const {data,pending}=candidateWithWorkSummaries();
+  if(pending){contributionPreviewPending=false;$('#actual-contribution-fields').textContent='请补齐已添加摘要的类别与区间，或移除该摘要，再查看实际发送内容。';$('#contribution-work-distribution').innerHTML='';setStatus($('#contribution-status'),`还有 ${pending} 项摘要待填写，当前不能发送。任务与费用记录已完整保留。`);return;}
+  try{
     const prepared=await prepareContribution(data);if(generation!==contributionGeneration)return;
     contributionData=prepared.data;const result=prepared.analysis;
+    $('#contribution-statistics').innerHTML=`<div class="preview-summary"><div><strong>${result.totals.quota_samples}</strong><span>组额度采样</span></div><div><strong>${result.totals.cost_periods}</strong><span>个完整周期</span></div><div><strong>${prepared.privacy.task_alias_count}</strong><span>条去标识任务记录</span></div></div>${acceptanceBlock(result.cost_results)}`;
+    $('#contribution-work-distribution').innerHTML=workSummaryBlock(result.cost_results);
     const subjects=[...new Set([...result.quota_results,...result.cost_results].map(row=>`${row.provider_id} / ${row.plan_id} / ${row.subject_id}（${label(row.subject_kind)}）`))];
-    $('#contribution-preview').innerHTML=`<div class="preview-heading"><h3>发送前预览</h3><span class="status-badge badge-teal">已在本地替换标识</span></div><div class="preview-summary"><div><strong>${result.totals.quota_samples}</strong><span>组额度采样</span></div><div><strong>${result.totals.cost_periods}</strong><span>个完整周期</span></div><div><strong>${prepared.privacy.task_alias_count}</strong><span>条去标识任务记录</span></div></div>${acceptanceBlock(result.cost_results)}<div class="preview-subjects">${subjects.map(escapeHTML).join('<br>')}</div><p class="footnote">任务和窗口已换成临时随机别名；工作流别名由本浏览器保存的随机密钥生成。原任务名、窗口名、工作流名和本地密钥不会发送。提供商、套餐、模型、额度池和价格快照仍是公开比较字段，请确认其中没有个人或单位名称。</p><p class="footnote">发送内容包括去标识的逐任务统计记录、验收结果、尝试次数、人工分钟、Token、费用及额度快照。服务器重新计算后只保存周期与额度摘要，不保存逐任务记录和原始快照。“完整周期、覆盖全部任务、单模型或组合归属”仍由你声明。</p><details class="payload-preview"><summary>查看实际待发送的数据字段与数值</summary><pre class="summary-json">${escapeHTML(JSON.stringify(prepared.data,null,2))}</pre><p class="footnote">仅在你勾选并提交后，附加 consent.accepted=true 和授权版本 ${escapeHTML(CONSENT_VERSION)} 发送这份数据。</p></details><button id="clear-contribution-preview" class="text-action" type="button">清除本次预览</button>`;
-    $('#clear-contribution-preview').addEventListener('click',()=>{resetContribution();$('#contribution-file').value='';setStatus($('#contribution-status'),'已清除本次待发送记录。');});
-    $('#contribution-preview').hidden=false;$('#consent-area').hidden=false;setStatus($('#contribution-status'),'文件已在本地校验并替换标识。尚未发送，请核对实际数据预览后再决定。','success');
+    $('#contribution-subjects').innerHTML=subjects.map(escapeHTML).join('<br>');
+    $('#actual-contribution-fields').textContent=JSON.stringify(prepared.data,null,2);
+    $('#work-summary-review-label').hidden=!hasWorkSummaries(prepared.data);$('#consent-area').hidden=contributionDemo;
+    setStatus($('#contribution-status'),contributionDemo?'构造样例仅在本地演示。你可以编辑、移除摘要并查看分布，发送功能已关闭。':'预览已更新，尚未发送。请逐项核对工作摘要，并重新确认是否分享。','success');
   }catch(error){if(generation===contributionGeneration)setStatus($('#contribution-status'),describeError(error),'error');}
+  finally{if(generation===contributionGeneration){contributionPreviewPending=false;updateSubmitAvailability();}}
+}
+function renderContributionShell(){
+  $('#contribution-preview').innerHTML=`<div class="preview-heading"><h3>发送前预览</h3><span class="status-badge ${contributionDemo?'badge-amber':'badge-teal'}">${contributionDemo?'构造样例 · 不发送':'已在本地替换标识'}</span></div><div id="contribution-statistics"></div>${workSummaryEditor()}<div id="contribution-work-distribution"></div><div id="contribution-subjects" class="preview-subjects"></div><p class="footnote">任务和窗口已换成临时随机别名；工作流别名由本浏览器保存的随机密钥生成。原名称与本地密钥不会发送。请确认保留的提供商、套餐、模型、额度池和价格快照适合公开。</p><p class="footnote">发送去标识任务统计、可选工作摘要、验收、尝试次数、人工分钟、Token、费用与额度快照。服务器只保存周期、额度与工作摘要分布，不保存逐任务记录和原始快照。</p><details class="payload-preview"><summary>查看实际待发送的数据字段与数值</summary><pre id="actual-contribution-fields" class="summary-json">正在本地整理…</pre><p class="footnote">仅在确认并提交后附加授权版本 ${escapeHTML(CONSENT_VERSION)}。含工作摘要时还会附加逐项核对确认。</p></details><button id="clear-contribution-preview" class="text-action" type="button">清除本次预览</button>`;
+  $('#contribution-preview').hidden=false;
+  $('#clear-contribution-preview').addEventListener('click',()=>{if(contributionSubmitting)return;resetContribution();$('#contribution-file').value='';setStatus($('#contribution-status'),'已清除本次待发送记录。');});
+}
+async function loadContributionSource(data,{demo=false}={}){
+  analyzeDataset(data);
+  if(!demo&&data.dataset_kind!=='user_reported')throw new Error('构造样例只能在工作台体验，不能贡献到真实社区。请使用自己有权分享的真实脱敏记录。');
+  contributionSource=structuredClone(data);contributionDemo=demo;contributionDrafts.clear();
+  data.cost_periods.forEach((period,pi)=>period.tasks.forEach((task,ti)=>contributionDrafts.set(`${pi}:${ti}`,{enabled:Boolean(task.work_summary),function_category:task.work_summary?.function_category||'',code_change_band:task.work_summary?.code_change_band||'',invalidLines:false})));
+  renderContributionShell();await refreshContributionPreview();
+}
+$('#contribution-file').addEventListener('change',async event=>{
+  if(contributionSubmitting)return;resetContribution();const generation=contributionGeneration;
+  try{const data=await readJSON(event.target.files[0]);if(!data||generation!==contributionGeneration)return;await loadContributionSource(data);}
+  catch(error){setStatus($('#contribution-status'),describeError(error),'error');}
 });
-$('#contribution-consent').addEventListener('change',event=>{$('#submit-contribution').disabled=!event.target.checked||!contributionData;});
+$('#demo-work-summary').addEventListener('click',async()=>{
+  if(contributionSubmitting)return;resetContribution();const generation=contributionGeneration;
+  try{const response=await fetch('/samples/work-summary.json');if(!response.ok)throw new Error('构造样例暂时无法读取。');const data=await response.json();if(generation!==contributionGeneration)return;await loadContributionSource(data,{demo:true});}
+  catch(error){setStatus($('#contribution-status'),describeError(error),'error');}
+});
+$('#contribution-preview').addEventListener('click',event=>{
+  const button=event.target.closest('[data-work-toggle]');if(!button||contributionSubmitting||contributionSubmitted)return;
+  const row=button.closest('[data-work-key]'),draft=contributionDrafts.get(row.dataset.workKey);draft.enabled=!draft.enabled;draft.invalidLines=false;
+  if(!draft.enabled){draft.function_category='';draft.code_change_band='';$$('select,input',row).forEach(el=>el.value='');$('.work-row-error',row).textContent='';}
+  $$('select,input',row).forEach(el=>el.disabled=!draft.enabled);button.textContent=draft.enabled?'移除摘要':'添加摘要';refreshContributionPreview();
+});
+$('#contribution-preview').addEventListener('change',event=>{
+  if(contributionSubmitting||contributionSubmitted)return;const field=event.target.dataset.workField;if(!['function_category','code_change_band'].includes(field))return;
+  const row=event.target.closest('[data-work-key]'),draft=contributionDrafts.get(row.dataset.workKey);draft[field]=event.target.value;
+  if(field==='code_change_band'){$('[data-work-field="local_lines"]',row).value='';draft.invalidLines=false;$('.work-row-error',row).textContent='';}
+  refreshContributionPreview();
+});
+$('#contribution-preview').addEventListener('input',event=>{
+  if(contributionSubmitting||contributionSubmitted||event.target.dataset.workField!=='local_lines')return;
+  const row=event.target.closest('[data-work-key]'),draft=contributionDrafts.get(row.dataset.workKey),raw=event.target.value,lines=Number(raw);
+  draft.invalidLines=raw!==''&&(!Number.isSafeInteger(lines)||lines<0||lines>1000000000);
+  $('.work-row-error',row).textContent=draft.invalidLines?'请输入非负整数行数。':'';
+  if(raw!==''&&!draft.invalidLines){draft.code_change_band=lines===0?'not_applicable':lines<=50?'1_50':lines<=200?'51_200':lines<=500?'201_500':lines<=1000?'501_1000':'1000_plus';$('[data-work-field="code_change_band"]',row).value=draft.code_change_band;}
+  refreshContributionPreview();
+});
+$('#contribution-consent').addEventListener('change',updateSubmitAvailability);
+$('#work-summary-reviewed').addEventListener('change',updateSubmitAvailability);
 function downloadJSON(data,name) {
   const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 $('#submit-contribution').addEventListener('click',async()=>{
-  if(!contributionData||!$('#contribution-consent').checked)return;
-  const button=$('#submit-contribution'),generation=contributionGeneration;button.disabled=true;button.textContent='正在提交…';$('#contribution-file').disabled=true;
-  if($('#clear-contribution-preview'))$('#clear-contribution-preview').disabled=true;
+  updateSubmitAvailability();if($('#submit-contribution').disabled)return;
+  const button=$('#submit-contribution'),generation=contributionGeneration,dataToSend=structuredClone(contributionData),needsSummaryReview=hasWorkSummaries(dataToSend);
+  contributionSubmitting=true;button.disabled=true;button.textContent='正在提交…';$('#contribution-file').disabled=true;$('#demo-work-summary').disabled=true;$('#contribution-consent').disabled=true;$('#work-summary-reviewed').disabled=true;
+  $$('.work-summary-editor input,.work-summary-editor select,.work-summary-editor button,#clear-contribution-preview').forEach(el=>el.disabled=true);
   try{
-    const result=await api('/api/contributions',{method:'POST',body:JSON.stringify({consent:{accepted:true,version:CONSENT_VERSION},data:contributionData})});
+    const result=await api('/api/contributions',{method:'POST',body:JSON.stringify({consent:{accepted:true,version:CONSENT_VERSION,...(needsSummaryReview?{work_summary_reviewed:true}:{})},data:dataToSend})});
     receipt=result.receipt||{contribution_id:result.contribution_id,withdrawal_key:result.withdrawal_key};
     const savedReceipt=receipt,savedSummary=result.summary;
     $('#receipt-panel').innerHTML=`<h3>贡献已收到</h3><p>服务器已保存统计摘要，达到披露门槛后才显示组内指标。请立即下载撤回凭证；密钥只在创建时返回，离开页面后无法再次获取。</p><code>${escapeHTML(result.contribution_id)}</code><button id="download-receipt" class="button button-primary">下载撤回凭证 ↓</button><button id="download-contribution-summary" class="button button-outline" style="margin-left:8px">下载可分享的脱敏摘要 ↓</button><p class="footnote">这份文件使用服务器实际保存的周期与额度摘要。你可自行公开分享并选择数据许可；下载不会替你公开单份摘要，MIT 代码许可不自动适用于用户数据。</p>`;
@@ -235,8 +323,9 @@ $('#submit-contribution').addEventListener('click',async()=>{
     $('#download-receipt').addEventListener('click',()=>downloadJSON(savedReceipt,`dsh-withdrawal-${savedReceipt.contribution_id}.json`));
     $('#download-contribution-summary').disabled=!savedSummary;
     $('#download-contribution-summary').addEventListener('click',()=>{if(savedSummary)downloadJSON(savedSummary,'dsh-contributed-summary.json');});
-    if(generation===contributionGeneration)contributionData=null;
-  }catch(error){setStatus($('#contribution-status'),describeError(error),'error');button.disabled=!$('#contribution-consent').checked||!contributionData;}finally{button.textContent='同意并提交去标识记录 →';$('#contribution-file').disabled=false;if($('#clear-contribution-preview'))$('#clear-contribution-preview').disabled=false;}
+    if(generation===contributionGeneration){contributionData=null;contributionSubmitted=true;}
+  }catch(error){setStatus($('#contribution-status'),describeError(error),'error');}
+  finally{contributionSubmitting=false;button.textContent='同意并提交去标识记录 →';$('#contribution-file').disabled=false;$('#demo-work-summary').disabled=false;$('#contribution-consent').disabled=contributionSubmitted;$('#work-summary-reviewed').disabled=contributionSubmitted;if($('#clear-contribution-preview'))$('#clear-contribution-preview').disabled=false;$$('[data-work-key]').forEach(row=>{const draft=contributionDrafts.get(row.dataset.workKey);$$('select,input',row).forEach(el=>el.disabled=contributionSubmitted||!draft.enabled);$('[data-work-toggle]',row).disabled=contributionSubmitted;});updateSubmitAvailability();}
 });
 $('#show-withdraw').addEventListener('click',()=>$('#withdraw-section').scrollIntoView({behavior:'smooth'}));
 $('#receipt-file').addEventListener('change',async event=>{

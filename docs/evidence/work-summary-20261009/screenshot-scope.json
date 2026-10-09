@@ -1,0 +1,15 @@
+{
+  "scope": "Screenshot-only loopback instance; constructed test fixture; all non-GET/HEAD requests blocked; no production connection",
+  "desktop": {
+    "width": 1440,
+    "height": 1100
+  },
+  "mobile": {
+    "width": 390,
+    "height": 844
+  },
+  "includesRealUserData": false,
+  "submitted": false,
+  "fixtureTasks": 3,
+  "summaryTasks": 2
+}

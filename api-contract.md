@@ -42,12 +42,52 @@ difficulty: "simple"|"medium"|"complex",
 acceptance_standard: "test_suite_passed"|"review_approved"|"spec_checklist_passed",
 payment_category: "standard"|"promotional"|"credit"|"trial"|"unknown",
 costs: { subscription_cny, overage_cny, other_api_cny, refund_cny },
-tasks: [{ task_id, attempt_count, accepted, human_minutes, token_usage, api_equivalent_cny }]
+tasks: [{ task_id, attempt_count, accepted, human_minutes, token_usage, api_equivalent_cny, work_summary? }]
 ```
 
 净实付为前三项合计减退款，不得为负。一个完整周期只对应一个任务组；混用模型必须标 `workflow`，不能归裸模型。原 `task_id` 用于本地在每个完整周期内验重；只有换成随机任务别名后的记录才允许发送。服务端重算时再次验重，逐任务记录和任务别名均不入库。原型的 `period_is_closed` 改为 `complete_period`，`includes_all_tasks` 改为 `all_attempted_tasks_included`；移除 `record_id`，增加 `refund_cny`。
 
 ## 本地分析返回值
+
+### 可选工作摘要
+
+`schema_version` 仍为 `2.0`；旧文件无需添加摘要。每个任务可选 `work_summary`，存在时以下三项全部必填，额外字段拒绝：
+
+```text
+work_summary: {
+  function_category: "interface"|"api"|"data_processing"|"automation"|"integration"|
+    "infrastructure"|"testing"|"documentation"|"other",
+  code_change_band: "not_applicable"|"1_50"|"51_200"|"201_500"|"501_1000"|"1000_plus",
+  difficulty: "simple"|"medium"|"complex"
+}
+```
+
+`difficulty` 必须等于所属周期的难度，工作类型沿用周期 `task_type`，验收沿用任务 `accepted`。代码量只接收区间，具体行数、业务描述、源码、路径、文件名都不进入数据协议。区间仅描述工作规模，不作为质量或性价比排名指标。`not_applicable` 表示不适用或本次不提供代码规模区间，不从缺失值推断实际行数。
+
+浏览器若允许临时填写具体行数，须在本地转换成区间后才构建 `data`；不能在 JSON 中增加原始行数字段。`prepareContribution` 签名不变，保留合法枚举摘要。摘要编辑须以原本地数据为源再次生成待发送数据，并清空贡献同意及工作摘要确认，不能对已经替换的工作流别名重复做 HMAC。
+
+`cost_results[].work_summary_counts` 仅保存直方图计数，不保存逐任务摘要。返回固定结构：
+
+```text
+{
+  summarized_tasks: 已填写摘要的不同任务数,
+  function_category: { interface:0, api:0, data_processing:0, automation:0,
+    integration:0, infrastructure:0, testing:0, documentation:0, other:0 },
+  code_change_band: { not_applicable:0, "1_50":0, "51_200":0, "201_500":0,
+    "501_1000":0, "1000_plus":0 },
+  difficulty: { simple:0, medium:0, complex:0 }
+}
+```
+
+每个填摘要的任务每个维度计一次，失败与未验收任务也保留；重试不重复计摘要。未填摘要不猜测类别。旧库存摘要若没有此字段，在展示和合计中按“未提供工作摘要”处理。共享模块导出 `WORK_SUMMARY_ENUMS`、`hasWorkSummaries(data)`、`summarizeWorkSummaries(costResults)` 供前端复用。
+
+含任何工作摘要的请求额外要求 `consent.work_summary_reviewed=true`，缺失或 false 返回 403 `WORK_SUMMARY_REVIEW_REQUIRED`。这是用户对当前待发内容的确认，不证明真人审核或摘要真实性。所有新上传均使用 `2026-10-09-work-summary-1` 授权版本。
+
+公开成本组仍需要至少 5 份不同贡献编号。组内 `metrics.work_summary_counts` 还需至少 5 份含摘要贡献才返回直方图，否则为 null；`metrics.work_summary_contribution_count` 给出含摘要的贡献份数。低于成本组本身门槛时，整个 metrics 仍为 null。计数保存在既有 JSONB 摘要中，不增加数据表或逐任务存储。
+
+整包内容指纹包含工作摘要；逐成本记录的唯一指纹排除工作摘要，保留原统计事实与工作流别名。这既记录了实际内容，也阻止仅添加、删除或修改摘要后重复提交同一统计记录，且兼容摘要功能之前的记录指纹。它不识别独立真人，也不把不同用户相同起止日期的账期一概判成重复。
+
+构造演示文件为 `/samples/work-summary.json`，`dataset_kind=synthetic`，不能贡献到真实社区。
 
 ```text
 { schema_version, dataset_kind, quota_results: [...], cost_results: [...], totals: {...} }
@@ -58,7 +98,7 @@ quota_results[]: 公共样本维度 + token_semantics + reasoning_in_output +
 cost_results[]: 公共周期/任务维度 + payment_category + period_duration_days + cohort_month +
   net_paid_cny, attempted_tasks, accepted_tasks, acceptance_rate,
   total_attempts, failed_attempts, retry_attempts, human_minutes,
-  normalized_total_tokens, api_equivalent_cny, paid_cny_per_accepted_task
+  normalized_total_tokens, api_equivalent_cny, paid_cny_per_accepted_task, work_summary_counts
 totals: { quota_samples, cost_periods, attempted_tasks, accepted_tasks }
 ```
 
@@ -70,7 +110,7 @@ totals: { quota_samples, cost_periods, attempted_tasks, accepted_tasks }
 |---|---|
 | `GET /api/health` | `{ok:true, status:"ready"|"degraded", storage:"postgres"|"unconfigured", database_available:boolean, contributions_enabled:boolean,workflow_contributions_enabled:boolean,trial:{enabled:boolean,storage_expires_at:ISO日期或null}}` |
 | `GET /api/community` | 见下面聚合结构；无数据库返回 503 |
-| `POST /api/contributions` | `Content-Type: application/json`；正文 `{consent:{accepted:true,version:"2026-10-09-privacy-1"},data:<上面数据>}`；成功 201 返回 `{ok:true, contribution_id, withdrawal_key, receipt:{contribution_id,withdrawal_key,created_at,consent_version},summary:<服务端实际保存的摘要>}` |
+| `POST /api/contributions` | `Content-Type: application/json`；正文 `{consent:{accepted:true,version:"2026-10-09-work-summary-1",work_summary_reviewed?:true},data:<上面数据>}`；成功 201 返回 `{ok:true, contribution_id, withdrawal_key, receipt:{contribution_id,withdrawal_key,created_at,consent_version},summary:<服务端实际保存的摘要>}` |
 | `DELETE /api/contributions/:id` | `Authorization: Bearer <withdrawal_key>`；成功 `{ok:true,withdrawn:true}`。无效凭证统一 404。撤回后立即不再计入聚合。 |
 
 成功上传后必须显示并支持下载撤回凭证；不要放在 URL、分析日志或 localStorage。撤回密钥只在创建时返回，服务端保存哈希。用户保存凭证后可离开或重新打开撤回页。
@@ -95,7 +135,8 @@ totals: { quota_samples, cost_periods, attempted_tasks, accepted_tasks }
     contribution_count,period_count,published,metrics:null|{
       net_paid_cny,attempted_tasks,accepted_tasks,acceptance_rate,total_attempts,
       failed_attempts,retry_attempts,human_minutes,normalized_total_tokens,
-      api_equivalent_cny,paid_cny_per_accepted_task}}]
+      api_equivalent_cny,paid_cny_per_accepted_task,
+      work_summary_contribution_count,work_summary_counts:null|<工作摘要直方图>}}]
 }
 ```
 
@@ -122,7 +163,7 @@ totals: { quota_samples, cost_periods, attempted_tasks, accepted_tasks }
 - 服务端原有工作流 HMAC 再处理客户端别名；同浏览器原组合重复导入时内容指纹稳定，不同工作流仍参与区分。清除站点数据或换浏览器会改变别名，不实现跨浏览器、跨用户工作流身份验证。
 - 页面展示不同任务总数、已验收、未验收、验收率、全部尝试、未通过验收的尝试与重试。验收分母是每个周期内不同任务数，跨周期展示是合计；`未验收 = attempted_tasks - accepted_tasks`，`重试 = total_attempts - attempted_tasks`。验收标准仍为受控枚举与用户声明，没有新增自动验收。
 - 实际发送的是去标识逐任务统计记录和额度快照，服务器重算后仅存摘要。前端展开预览展示实际 `data` 字段和数值，不把这一过程称作“只上传汇总”。成功后的摘要下载必须直接使用 201 `summary`，因为服务端可能剔除不合格额度，并再次转换工作流别名。
-- 授权版本为 `2026-10-09-privacy-1`。旧版请求需要刷新页面、核对新说明后重新主动同意；已有数据库摘要和撤回凭证无需迁移。
+- 授权版本为 `2026-10-09-work-summary-1`。旧版请求需要刷新页面、核对新说明后重新主动同意；已有数据库摘要和撤回凭证无需迁移。
 
 ## 开源代码与用户摘要分享
 
