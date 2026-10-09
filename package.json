@@ -1,0 +1,21 @@
+{
+  "name": "coding-cost-transparency",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test tests/*.test.js",
+    "test:integration": "node --test tests/postgres.test.js"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "express": "5.2.1",
+    "express-rate-limit": "8.7.1",
+    "helmet": "8.3.0",
+    "pg": "8.23.1"
+  }
+}

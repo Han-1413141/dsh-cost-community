@@ -1,0 +1,30 @@
+# New deployment template. The current deployment is coordinated by the main agent;
+# do not apply this Blueprint over existing unrelated services.
+services:
+  - type: web
+    name: dsh-cost-community
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dsh-cost-community-db
+          property: connectionString
+      - key: ANONYMIZATION_SECRET
+        generateValue: true
+      - key: TRIAL_STORAGE_EXPIRES_AT
+        sync: false
+databases:
+  - name: dsh-cost-community-db
+    plan: free
+    region: singapore
+    ipAllowList: []

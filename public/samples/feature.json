@@ -1,0 +1,345 @@
+{
+  "schema_version": "2.0",
+  "dataset_kind": "synthetic",
+  "currency": "CNY",
+  "quota_samples": [
+    {
+      "provider_id": "example-provider-a",
+      "plan_id": "example-plan-a",
+      "quota_pool_id": "constructed-six-hour-pool",
+      "window_id": "constructed-window-a",
+      "window_start": "2026-09-20T06:00:00Z",
+      "window_end": "2026-09-20T12:00:00Z",
+      "price_snapshot_id": "constructed-price-01",
+      "subject_kind": "model",
+      "subject_id": "example-model-a",
+      "quota_source": "user_snapshot",
+      "window_type": "fixed_reset",
+      "coverage": "complete",
+      "before": {
+        "observed_at": "2026-09-20T08:00:00Z",
+        "used_percent": 12,
+        "token_usage": {
+          "token_semantics": "input_includes_cache",
+          "reasoning_in_output": true,
+          "input_tokens": 1920000,
+          "output_tokens": 480000,
+          "cache_read_tokens": 768000,
+          "cache_write_tokens": 192000,
+          "reasoning_tokens": 144000,
+          "normalized_total_tokens": 2400000
+        },
+        "api_equivalent_cny": 12
+      },
+      "after": {
+        "observed_at": "2026-09-20T09:00:00Z",
+        "used_percent": 18,
+        "token_usage": {
+          "token_semantics": "input_includes_cache",
+          "reasoning_in_output": true,
+          "input_tokens": 2352000,
+          "output_tokens": 588000,
+          "cache_read_tokens": 940800,
+          "cache_write_tokens": 235200,
+          "reasoning_tokens": 176400,
+          "normalized_total_tokens": 2940000
+        },
+        "api_equivalent_cny": 15.24
+      }
+    },
+    {
+      "provider_id": "example-provider-b",
+      "plan_id": "example-plan-b",
+      "quota_pool_id": "constructed-six-hour-pool",
+      "window_id": "constructed-window-b",
+      "window_start": "2026-09-20T06:00:00Z",
+      "window_end": "2026-09-20T12:00:00Z",
+      "price_snapshot_id": "constructed-price-01",
+      "subject_kind": "model",
+      "subject_id": "example-model-b",
+      "quota_source": "user_snapshot",
+      "window_type": "fixed_reset",
+      "coverage": "complete",
+      "before": {
+        "observed_at": "2026-09-20T08:00:00Z",
+        "used_percent": 22,
+        "token_usage": {
+          "token_semantics": "input_includes_cache",
+          "reasoning_in_output": true,
+          "input_tokens": 1920000,
+          "output_tokens": 480000,
+          "cache_read_tokens": 768000,
+          "cache_write_tokens": 192000,
+          "reasoning_tokens": 144000,
+          "normalized_total_tokens": 2400000
+        },
+        "api_equivalent_cny": 12
+      },
+      "after": {
+        "observed_at": "2026-09-20T09:00:00Z",
+        "used_percent": 29.5,
+        "token_usage": {
+          "token_semantics": "input_includes_cache",
+          "reasoning_in_output": true,
+          "input_tokens": 2760000,
+          "output_tokens": 690000,
+          "cache_read_tokens": 1104000,
+          "cache_write_tokens": 276000,
+          "reasoning_tokens": 207000,
+          "normalized_total_tokens": 3450000
+        },
+        "api_equivalent_cny": 16.5
+      }
+    }
+  ],
+  "cost_periods": [
+    {
+      "provider_id": "example-provider-a",
+      "plan_id": "example-plan-a",
+      "period_start": "2026-09-01T00:00:00Z",
+      "period_end": "2026-10-01T00:00:00Z",
+      "task_type": "feature",
+      "difficulty": "complex",
+      "acceptance_standard": "spec_checklist_passed",
+      "tasks": [
+        {
+          "task_id": "anonymous-task-a-01",
+          "attempt_count": 2,
+          "accepted": true,
+          "human_minutes": 25,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 486400,
+            "output_tokens": 121600,
+            "cache_read_tokens": 194560,
+            "cache_write_tokens": 48640,
+            "reasoning_tokens": 36480,
+            "normalized_total_tokens": 608000
+          },
+          "api_equivalent_cny": 3.04
+        },
+        {
+          "task_id": "anonymous-task-a-02",
+          "attempt_count": 1,
+          "accepted": true,
+          "human_minutes": 20,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 476800,
+            "output_tokens": 119200,
+            "cache_read_tokens": 190720,
+            "cache_write_tokens": 47680,
+            "reasoning_tokens": 35760,
+            "normalized_total_tokens": 596000
+          },
+          "api_equivalent_cny": 2.98
+        },
+        {
+          "task_id": "anonymous-task-a-03",
+          "attempt_count": 2,
+          "accepted": true,
+          "human_minutes": 32,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 505600,
+            "output_tokens": 126400,
+            "cache_read_tokens": 202240,
+            "cache_write_tokens": 50560,
+            "reasoning_tokens": 37920,
+            "normalized_total_tokens": 632000
+          },
+          "api_equivalent_cny": 3.16
+        },
+        {
+          "task_id": "anonymous-task-a-04",
+          "attempt_count": 3,
+          "accepted": true,
+          "human_minutes": 45,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 534400,
+            "output_tokens": 133600,
+            "cache_read_tokens": 213760,
+            "cache_write_tokens": 53440,
+            "reasoning_tokens": 40080,
+            "normalized_total_tokens": 668000
+          },
+          "api_equivalent_cny": 3.34
+        },
+        {
+          "task_id": "anonymous-task-a-05",
+          "attempt_count": 1,
+          "accepted": true,
+          "human_minutes": 18,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 505600,
+            "output_tokens": 126400,
+            "cache_read_tokens": 202240,
+            "cache_write_tokens": 50560,
+            "reasoning_tokens": 37920,
+            "normalized_total_tokens": 632000
+          },
+          "api_equivalent_cny": 3.16
+        },
+        {
+          "task_id": "anonymous-task-a-06",
+          "attempt_count": 2,
+          "accepted": false,
+          "human_minutes": 40,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 534400,
+            "output_tokens": 133600,
+            "cache_read_tokens": 213760,
+            "cache_write_tokens": 53440,
+            "reasoning_tokens": 40080,
+            "normalized_total_tokens": 668000
+          },
+          "api_equivalent_cny": 3.34
+        }
+      ],
+      "subject_kind": "model",
+      "subject_id": "example-model-a",
+      "complete_period": true,
+      "all_attempted_tasks_included": true,
+      "payment_category": "standard",
+      "costs": {
+        "subscription_cny": 259,
+        "overage_cny": 41,
+        "other_api_cny": 0,
+        "refund_cny": 0
+      }
+    },
+    {
+      "provider_id": "example-provider-b",
+      "plan_id": "example-plan-b",
+      "period_start": "2026-09-01T00:00:00Z",
+      "period_end": "2026-10-01T00:00:00Z",
+      "task_type": "feature",
+      "difficulty": "complex",
+      "acceptance_standard": "spec_checklist_passed",
+      "tasks": [
+        {
+          "task_id": "anonymous-task-b-01",
+          "attempt_count": 3,
+          "accepted": true,
+          "human_minutes": 42,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 713600,
+            "output_tokens": 178400,
+            "cache_read_tokens": 285440,
+            "cache_write_tokens": 71360,
+            "reasoning_tokens": 53520,
+            "normalized_total_tokens": 892000
+          },
+          "api_equivalent_cny": 4.46
+        },
+        {
+          "task_id": "anonymous-task-b-02",
+          "attempt_count": 2,
+          "accepted": true,
+          "human_minutes": 30,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 704000,
+            "output_tokens": 176000,
+            "cache_read_tokens": 281600,
+            "cache_write_tokens": 70400,
+            "reasoning_tokens": 52800,
+            "normalized_total_tokens": 880000
+          },
+          "api_equivalent_cny": 4.4
+        },
+        {
+          "task_id": "anonymous-task-b-03",
+          "attempt_count": 2,
+          "accepted": true,
+          "human_minutes": 34,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 713600,
+            "output_tokens": 178400,
+            "cache_read_tokens": 285440,
+            "cache_write_tokens": 71360,
+            "reasoning_tokens": 53520,
+            "normalized_total_tokens": 892000
+          },
+          "api_equivalent_cny": 4.46
+        },
+        {
+          "task_id": "anonymous-task-b-04",
+          "attempt_count": 4,
+          "accepted": true,
+          "human_minutes": 60,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 761600,
+            "output_tokens": 190400,
+            "cache_read_tokens": 304640,
+            "cache_write_tokens": 76160,
+            "reasoning_tokens": 57120,
+            "normalized_total_tokens": 952000
+          },
+          "api_equivalent_cny": 4.76
+        },
+        {
+          "task_id": "anonymous-task-b-05",
+          "attempt_count": 3,
+          "accepted": false,
+          "human_minutes": 48,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 752000,
+            "output_tokens": 188000,
+            "cache_read_tokens": 300800,
+            "cache_write_tokens": 75200,
+            "reasoning_tokens": 56400,
+            "normalized_total_tokens": 940000
+          },
+          "api_equivalent_cny": 4.7
+        },
+        {
+          "task_id": "anonymous-task-b-06",
+          "attempt_count": 3,
+          "accepted": false,
+          "human_minutes": 46,
+          "token_usage": {
+            "token_semantics": "input_includes_cache",
+            "reasoning_in_output": true,
+            "input_tokens": 761600,
+            "output_tokens": 190400,
+            "cache_read_tokens": 304640,
+            "cache_write_tokens": 76160,
+            "reasoning_tokens": 57120,
+            "normalized_total_tokens": 952000
+          },
+          "api_equivalent_cny": 4.76
+        }
+      ],
+      "subject_kind": "model",
+      "subject_id": "example-model-b",
+      "complete_period": true,
+      "all_attempted_tasks_included": true,
+      "payment_category": "standard",
+      "costs": {
+        "subscription_cny": 199,
+        "overage_cny": 46,
+        "other_api_cny": 5,
+        "refund_cny": 0
+      }
+    }
+  ]
+}
