@@ -6,13 +6,13 @@
 
 本轮为试运行，当前数据库存储期限为 **2026 年 11 月 8 日 17:11:08（北京时间）**，即 `2026-11-08T09:11:08Z`。请保存个人导出和撤回凭证。免费 Web 空闲后可能休眠，首次打开需要等待服务唤醒。
 
-该网站基于 DeepSeek Harness（DSH）用量统计工作的数据方法扩展，提供独立的套餐额度差分、完整周期成本分析、结构数据贡献、公开摘要与撤回功能。前端为同源 HTML/CSS/JS，后端为 Node.js + Express + PostgreSQL，输入由 Ajv 和前后端共用的计算模块双重校验。
+该网站建立在 DSH Cost Meter 已发布插件与计量成果之上：沿用 DeepSeek Harness（DSH）场景中的 API / Plan 分账、调用归因与额度采样方法，继续扩展任务验收与性价比分析，提供套餐额度差分、完整周期成本分析、结构数据贡献、公开聚合与撤回功能。前端为同源 HTML/CSS/JS，后端为 Node.js + Express + PostgreSQL，输入由 Ajv 和前后端共用的计算模块双重校验。
 
-**真实社区初始为 0。**构造数据只用于前端演示与独立测试；贡献接口拒绝 `synthetic`。后台不抓取 AA 或其他第三方榜单，目录等价金额由用户按自己标明的价格快照提供，不能称作本站已核验的官方价格。
+**真实社区初始为 0。**构造数据只用于前端演示与独立测试；贡献接口拒绝 `synthetic`。方案将 AA 已公开的模型能力、价格与评测成本数据作为外部参照，对齐模型版本、推理设置和数据日期后，与本地验收率、每项验收任务成本和人工投入对照解释差异。当前网站提供 [AA 模型公开数据](https://artificialanalysis.ai/models) 与 [评测方法](https://artificialanalysis.ai/methodology/intelligence-benchmarking) 外链，尚未完成自动接入。目录等价金额仍由用户按自己标明的价格快照提供。
 
 API 单价不等于完成任务的成本。同样的编码预算下，网站关注验收通过的任务数，并把失败、重试和人工时间一并展示。前后端与计算方法开源，用户可检查字段处理、费用分母、存储与撤回实现后，再决定是否贡献。
 
-本项目以 MIT 许可证发布，见 `LICENSE`；沿用 `Copyright (c) 2026 dsh-cost-meter contributors`。来源项目为 [Han-1413141/dsh-cost-meter](https://github.com/Han-1413141/dsh-cost-meter)，网站在本轮离线分析原型的计算与输入合同上继续开发。DeepSeek、DeepSeek Harness 和 Artificial Analysis 名称用于说明兼容关系或来源，不表示这些机构发布或核验了社区数据。
+本项目以 MIT 许可证发布，见 `LICENSE`；沿用 `Copyright (c) 2026 dsh-cost-meter contributors`。来源项目为 [Han-1413141/dsh-cost-meter](https://github.com/Han-1413141/dsh-cost-meter)，网站在该已发布插件与既有计量成果上扩展，并复用本轮离线分析原型的计算与输入合同。DeepSeek、DeepSeek Harness 和 Artificial Analysis 名称用于说明兼容关系或来源，不表示这些机构发布或核验了社区数据。
 
 MIT 适用于本仓库代码，不自动适用于用户数据。站内贡献经主动同意后用于公开聚合；用户也可只在本地分析，下载去标识的周期与额度摘要，再自行决定是否公开、在哪里分享和采用何种数据许可。网站不会因下载或贡献而自动公开单份摘要，也不新增公开原始任务记录的接口。
 
